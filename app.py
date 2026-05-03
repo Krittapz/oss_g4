@@ -56,15 +56,20 @@ st.markdown("""
         border-radius: 8px;
         overflow: hidden;
     }
+    /* แต่ง Expander ให้ดูคลีน */
+    [data-testid="stExpander"] {
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
 # 2. ฟังก์ชันโหลดข้อมูล (Data Loading)
 # ==========================================
-# ใส่ ttl=300 หมายถึงให้ล้างข้อมูลที่จำไว้ทุกๆ 300 วินาที (5 นาที) 
-# ถ้าอัปเดตไฟล์ใหม่ รอไม่เกิน 5 นาทีเว็บจะอัปเดตตาม
-@st.cache_data(ttl=60) 
+# ตั้งเวลาเคลียร์แคชอัตโนมัติทุก 5 นาที (300 วินาที)
+@st.cache_data(ttl=300)
 def load_data():
     file_path = 'test_group4_cut.xlsx'
     try:
@@ -92,20 +97,10 @@ except IndexError:
 # ==========================================
 # 4. กำหนดชุดสี (Color Mapping) สำหรับเหตุผลฯ
 # ==========================================
-# ปรับชุดสีใหม่ให้มีความอิ่มสีชัดเจนขึ้น 
 VIBRANT_COLORS = [
-    '#60A5FA', # Blue
-    '#4ADE80', # Green
-    '#FACC15', # Yellow
-    '#F87171', # Red
-    '#C084FC', # Purple
-    '#FB923C', # Orange
-    '#2DD4BF', # Teal
-    '#F472B6', # Pink
-    '#9CA3AF'  # Gray
+    '#60A5FA', '#4ADE80', '#FACC15', '#F87171', 
+    '#C084FC', '#FB923C', '#2DD4BF', '#F472B6', '#9CA3AF'
 ]
-
-# ดึงเหตุผลที่ไม่ซ้ำกันทั้งหมด (ไม่นับค่าว่าง) มาจับคู่กับสี
 unique_reasons_all = sorted([str(x) for x in df[COL_REASON].unique() if str(x).strip() != ''])
 color_map = {reason: VIBRANT_COLORS[i % len(VIBRANT_COLORS)] for i, reason in enumerate(unique_reasons_all)}
 
@@ -169,21 +164,48 @@ with col4:
     st.markdown(f'<div class="metric-card"><div class="metric-label">⚠️ เหตุผลที่ไม่พัฒนา e-Service</div><div class="metric-value">{count_reason:,}</div></div>', unsafe_allow_html=True)
 
 st.write("") 
-st.write("") 
 
 # ==========================================
-# 8. ส่วนแสดงตาราง
+# 8. ส่วนแสดงกราฟ (Collapse / Expand)
+# ==========================================
+st.markdown("### 📈 กราฟสรุปข้อมูล (คลิกเพื่อกางดูรายละเอียด)")
+
+# เตรียมข้อมูลสำหรับกราฟ (นับจำนวนและตัดค่าว่างออก)
+chart_ministry = filtered_df[filtered_df[COL_MINISTRY] != ''][COL_MINISTRY].value_counts()
+chart_agency = filtered_df[filtered_df[COL_AGENCY] != ''][COL_AGENCY].value_counts()
+chart_reason = filtered_df[filtered_df[COL_REASON] != ''][COL_REASON].value_counts()
+
+with st.expander("📊 ดูกราฟสรุปจำนวนรายการแยกตาม 'กระทรวง'"):
+    if not chart_ministry.empty:
+        st.bar_chart(chart_ministry)
+    else:
+        st.info("ไม่มีข้อมูลสำหรับแสดงกราฟ")
+
+with st.expander("📊 ดูกราฟสรุปจำนวนรายการแยกตาม 'หน่วยงาน'"):
+    if not chart_agency.empty:
+        st.bar_chart(chart_agency)
+    else:
+        st.info("ไม่มีข้อมูลสำหรับแสดงกราฟ")
+
+with st.expander("📊 ดูกราฟสรุปแยกตาม 'เหตุผลที่ไม่พัฒนา e-Service'"):
+    if not chart_reason.empty:
+        st.bar_chart(chart_reason)
+    else:
+        st.info("ไม่มีข้อมูลสำหรับแสดงกราฟ")
+
+st.write("---")
+
+# ==========================================
+# 9. ส่วนแสดงตาราง
 # ==========================================
 st.subheader(f"📄 รายละเอียดข้อมูล ({count_all} รายการ)")
 
-# ฟังก์ชันสำหรับระบายสีใน DataFrame
 def apply_color(val):
     color = color_map.get(str(val), '')
     if color:
         return f'background-color: {color}; color: #1f2937;'
     return ''
 
-# แสดงผลตารางพร้อม Styler ไฮไลต์สีลงในคอลัมน์ F
 if not filtered_df.empty:
     if hasattr(filtered_df.style, 'map'):
         styled_df = filtered_df.style.map(apply_color, subset=[COL_REASON])
@@ -195,12 +217,11 @@ else:
     st.info("ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา")
 
 # ==========================================
-# 9. ส่วนแสดง Legend เม็ดสี (ย้ายมาไว้ด้านล่างตาราง)
+# 10. ส่วนแสดง Legend เม็ดสี (ด้านล่างตาราง)
 # ==========================================
 current_reasons = sorted([str(x) for x in filtered_df[COL_REASON].unique() if str(x).strip() != ''])
 
 if current_reasons:
-    # เพิ่ม margin-top เพื่อเว้นระยะจากตารางด้านบน
     legend_html = '<div style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 15px; padding: 10px; background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">'
     legend_html += '<span style="font-weight: 500; color: #374151; margin-right: 5px;">📌 สัญลักษณ์สี:</span>'
     for reason in current_reasons:
