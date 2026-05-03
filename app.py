@@ -269,7 +269,7 @@ if current_reasons:
     legend_html += '</div>'
     st.markdown(legend_html, unsafe_allow_html=True)
 
-    # ==========================================
+# ==========================================
 # 11. ส่วนแสดงผล Tableau Public (Embed)
 # ==========================================
 st.markdown("---")
@@ -288,8 +288,6 @@ tableau_embed_code = """
     vizElement.parentNode.insertBefore(scriptElement, vizElement);
 </script>
 """
-
-st.components.v1.html(tableau_embed_code, height=850, scrolling=True)
 
 # ใช้ st.components.v1.html เพื่อเรนเดอร์โค้ด Tableau บน Streamlit
 # ปรับ height ให้เหมาะสมกับความสูงของแดชบอร์ดคุณ (เช่น 800-1000px)
