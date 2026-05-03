@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import altair as alt  # เพิ่มไลบรารีสำหรับวาดกราฟขั้นสูง
 
 # ==========================================
 # 1. ตั้งค่าหน้าเพจ (Page Configuration)
@@ -56,7 +57,6 @@ st.markdown("""
         border-radius: 8px;
         overflow: hidden;
     }
-    /* แต่ง Expander ให้ดูคลีน */
     [data-testid="stExpander"] {
         border-radius: 8px;
         border: 1px solid #e0e0e0;
@@ -68,7 +68,6 @@ st.markdown("""
 # ==========================================
 # 2. ฟังก์ชันโหลดข้อมูล (Data Loading)
 # ==========================================
-# ตั้งเวลาเคลียร์แคชอัตโนมัติทุก 5 นาที (300 วินาที)
 @st.cache_data(ttl=300)
 def load_data():
     file_path = 'test_group4_cut.xlsx'
@@ -166,30 +165,66 @@ with col4:
 st.write("") 
 
 # ==========================================
-# 8. ส่วนแสดงกราฟ (Collapse / Expand)
+# 8. ส่วนแสดงกราฟแบบแนวนอน (Custom Horizontal Bar Chart)
 # ==========================================
 st.markdown("### 📈 กราฟสรุปข้อมูล (คลิกเพื่อกางดูรายละเอียด)")
 
-# เตรียมข้อมูลสำหรับกราฟ (นับจำนวนและตัดค่าว่างออก)
+# ฟังก์ชันช่วยสร้างกราฟแนวนอน
+def create_horizontal_bar(data_series, color_hex):
+    if data_series.empty:
+        return None
+    # เตรียมข้อมูลให้อยู่ในรูปแบบ DataFrame
+    df_chart = data_series.reset_index()
+    df_chart.columns = ['Name', 'Count']
+    
+    # คำนวณความสูงของกราฟให้สัมพันธ์กับจำนวนข้อมูล (แท่งละ 35px) เพื่อไม่ให้เบียดกัน
+    dynamic_height = max(150, len(df_chart) * 35)
+    
+    # 1. วาดแท่งกราฟ
+    bars = alt.Chart(df_chart).mark_bar(color=color_hex, cornerRadiusEnd=4).encode(
+        x=alt.X('Count:Q', title='จำนวน (รายการ)', axis=alt.Axis(tickMinStep=1)),
+        y=alt.Y('Name:N', sort='-x', title=None, axis=alt.Axis(labelLimit=300)), # ให้พื้นที่ชื่อยาวๆ 300px
+        tooltip=['Name', 'Count']
+    )
+    
+    # 2. ใส่ตัวเลขที่ปลายแท่ง
+    text = bars.mark_text(
+        align='left',
+        baseline='middle',
+        dx=5, # ขยับข้อความออกจากปลายแท่ง 5px
+        color='#1f2937',
+        fontSize=13,
+        fontWeight=500
+    ).encode(
+        text='Count:Q'
+    )
+    
+    # นำแท่งและข้อความมารวมกัน
+    return (bars + text).properties(height=dynamic_height)
+
+# เตรียมข้อมูล
 chart_ministry = filtered_df[filtered_df[COL_MINISTRY] != ''][COL_MINISTRY].value_counts()
 chart_agency = filtered_df[filtered_df[COL_AGENCY] != ''][COL_AGENCY].value_counts()
 chart_reason = filtered_df[filtered_df[COL_REASON] != ''][COL_REASON].value_counts()
 
 with st.expander("📊 ดูกราฟสรุปจำนวนรายการแยกตาม 'กระทรวง'"):
-    if not chart_ministry.empty:
-        st.bar_chart(chart_ministry)
+    chart = create_horizontal_bar(chart_ministry, '#60A5FA') # สีฟ้า
+    if chart:
+        st.altair_chart(chart, use_container_width=True)
     else:
         st.info("ไม่มีข้อมูลสำหรับแสดงกราฟ")
 
 with st.expander("📊 ดูกราฟสรุปจำนวนรายการแยกตาม 'หน่วยงาน'"):
-    if not chart_agency.empty:
-        st.bar_chart(chart_agency)
+    chart = create_horizontal_bar(chart_agency, '#4ADE80') # สีเขียว
+    if chart:
+        st.altair_chart(chart, use_container_width=True)
     else:
         st.info("ไม่มีข้อมูลสำหรับแสดงกราฟ")
 
 with st.expander("📊 ดูกราฟสรุปแยกตาม 'เหตุผลที่ไม่พัฒนา e-Service'"):
-    if not chart_reason.empty:
-        st.bar_chart(chart_reason)
+    chart = create_horizontal_bar(chart_reason, '#F87171') # สีแดง
+    if chart:
+        st.altair_chart(chart, use_container_width=True)
     else:
         st.info("ไม่มีข้อมูลสำหรับแสดงกราฟ")
 
