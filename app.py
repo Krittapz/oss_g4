@@ -151,13 +151,13 @@ count_reason = filtered_df[filtered_df[COL_REASON] != ''][COL_REASON].nunique()
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.markdown(f'''<div class="metric-card"><div class="metric-label">📝 จำนวนรายการทั้งหมด</div><div class="metric-value">{count_all:,}</div></div>''', unsafe_allow_html=True)
+    st.markdown(f'<div class="metric-card"><div class="metric-label">📝 จำนวนรายการทั้งหมด</div><div class="metric-value">{count_all:,}</div></div>', unsafe_allow_html=True)
 with col2:
-    st.markdown(f'''<div class="metric-card"><div class="metric-label">🏛️ จำนวนกระทรวง</div><div class="metric-value">{count_ministry:,}</div></div>''', unsafe_allow_html=True)
+    st.markdown(f'<div class="metric-card"><div class="metric-label">🏛️ จำนวนกระทรวง</div><div class="metric-value">{count_ministry:,}</div></div>', unsafe_allow_html=True)
 with col3:
-    st.markdown(f'''<div class="metric-card"><div class="metric-label">🏢 จำนวนหน่วยงาน</div><div class="metric-value">{count_agency:,}</div></div>''', unsafe_allow_html=True)
+    st.markdown(f'<div class="metric-card"><div class="metric-label">🏢 จำนวนหน่วยงาน</div><div class="metric-value">{count_agency:,}</div></div>', unsafe_allow_html=True)
 with col4:
-    st.markdown(f'''<div class="metric-card"><div class="metric-label">⚠️ เหตุผลที่ไม่พัฒนา e-Service</div><div class="metric-value">{count_reason:,}</div></div>''', unsafe_allow_html=True)
+    st.markdown(f'<div class="metric-card"><div class="metric-label">⚠️ เหตุผลที่ไม่พัฒนา e-Service</div><div class="metric-value">{count_reason:,}</div></div>', unsafe_allow_html=True)
 
 st.write("") 
 st.write("") 
@@ -167,7 +167,7 @@ st.write("")
 # ==========================================
 st.subheader(f"📄 รายละเอียดข้อมูล ({count_all} รายการ)")
 
-# สร้าง Legend อธิบายสี (แสดงเฉพาะสีที่มีในข้อมูลที่ถูก Filter แล้ว เพื่อความสะอาดตา)
+# สร้าง Legend อธิบายสี (แก้ปัญหาการแสดงเป็น code โดยเอาการขึ้นบรรทัดใหม่และการย่อหน้าออก)
 current_reasons = sorted([str(x) for x in filtered_df[COL_REASON].unique() if str(x).strip() != ''])
 
 if current_reasons:
@@ -175,12 +175,8 @@ if current_reasons:
     legend_html += '<span style="font-weight: 500; color: #374151; margin-right: 5px;">📌 สัญลักษณ์สี:</span>'
     for reason in current_reasons:
         color = color_map.get(reason, '#ffffff')
-        legend_html += f'''
-            <div style="display: flex; align-items: center; gap: 6px;">
-                <div style="width: 14px; height: 14px; border-radius: 50%; background-color: {color}; border: 1px solid #d1d5db;"></div>
-                <span style="font-size: 0.95rem; color: #4b5563;">{reason}</span>
-            </div>
-        '''
+        # วางเป็นบรรทัดเดียวเพื่อป้องกัน Markdown ตีความเป็น Code block
+        legend_html += f'<div style="display: flex; align-items: center; gap: 6px;"><div style="width: 14px; height: 14px; border-radius: 50%; background-color: {color}; border: 1px solid #d1d5db;"></div><span style="font-size: 0.95rem; color: #4b5563;">{reason}</span></div>'
     legend_html += '</div>'
     st.markdown(legend_html, unsafe_allow_html=True)
 
@@ -188,13 +184,11 @@ if current_reasons:
 def apply_color(val):
     color = color_map.get(str(val), '')
     if color:
-        # ระบายสีพื้นหลังเซลล์ และให้ข้อความสีเข้มเพื่อให้อ่านง่าย
         return f'background-color: {color}; color: #1f2937;'
     return ''
 
 # แสดงผลตารางพร้อม Styler ไฮไลต์สีลงในคอลัมน์ F
 if not filtered_df.empty:
-    # ตรวจสอบเวอร์ชัน pandas (ใช้ map ถ้าเวอร์ชันใหม่, applymap ถ้าเวอร์ชันเก่า)
     if hasattr(filtered_df.style, 'map'):
         styled_df = filtered_df.style.map(apply_color, subset=[COL_REASON])
     else:
