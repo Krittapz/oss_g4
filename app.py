@@ -291,4 +291,4 @@ tableau_embed_code = """
 
 # ใช้ st.components.v1.html เพื่อเรนเดอร์โค้ด Tableau บน Streamlit
 # ปรับ height ให้เหมาะสมกับความสูงของแดชบอร์ดคุณ (เช่น 800-1000px)
-st.components.v1.html(tableau_embed_code, height=800, scrolling=True)
+st.components.v1.html(tableau_embed_code, height=900, scrolling=True)
