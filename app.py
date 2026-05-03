@@ -173,34 +173,38 @@ st.markdown("### 📈 กราฟสรุปข้อมูล (คลิก�
 def create_horizontal_bar(data_series, color_hex):
     if data_series.empty:
         return None
-    # เตรียมข้อมูลให้อยู่ในรูปแบบ DataFrame
     df_chart = data_series.reset_index()
     df_chart.columns = ['Name', 'Count']
     
-    # คำนวณความสูงของกราฟให้สัมพันธ์กับจำนวนข้อมูล (แท่งละ 35px) เพื่อไม่ให้เบียดกัน
     dynamic_height = max(150, len(df_chart) * 35)
     
-    # 1. วาดแท่งกราฟ
     bars = alt.Chart(df_chart).mark_bar(color=color_hex, cornerRadiusEnd=4).encode(
         x=alt.X('Count:Q', title='จำนวน (รายการ)', axis=alt.Axis(tickMinStep=1)),
-        y=alt.Y('Name:N', sort='-x', title=None, axis=alt.Axis(labelLimit=300)), # ให้พื้นที่ชื่อยาวๆ 300px
+        y=alt.Y('Name:N', sort='-x', title=None, axis=alt.Axis(labelLimit=300)),
         tooltip=['Name', 'Count']
     )
     
-    # 2. ใส่ตัวเลขที่ปลายแท่ง
+    # ใส่ตัวเลขสีขาว ขยับเข้ามาอยู่ด้านในปลายแท่งกราฟ และตั้งฟอนต์
     text = bars.mark_text(
-        align='left',
+        align='right',    # ชิดขวาของจุดสิ้นสุด
         baseline='middle',
-        dx=5, # ขยับข้อความออกจากปลายแท่ง 5px
-        color='#1f2937',
+        dx=-5,            # ขยับเข้ามาในแท่งกราฟ 5px
+        color='#ffffff',  # อักษรสีขาว
         fontSize=13,
-        fontWeight=500
+        fontWeight=600,   # หนาขึ้นเพื่อให้สีขาวอ่านชัด
+        font='Prompt'     # กำหนดฟอนต์ Prompt
     ).encode(
         text='Count:Q'
     )
     
-    # นำแท่งและข้อความมารวมกัน
-    return (bars + text).properties(height=dynamic_height)
+    # รวมกราฟและตั้งค่าฟอนต์ Prompt ให้แกน X, Y
+    chart = (bars + text).properties(height=dynamic_height).configure_axis(
+        labelFont='Prompt',
+        titleFont='Prompt'
+    ).configure_text(
+        font='Prompt'
+    )
+    return chart
 
 # เตรียมข้อมูล
 chart_ministry = filtered_df[filtered_df[COL_MINISTRY] != ''][COL_MINISTRY].value_counts()
@@ -208,21 +212,21 @@ chart_agency = filtered_df[filtered_df[COL_AGENCY] != ''][COL_AGENCY].value_coun
 chart_reason = filtered_df[filtered_df[COL_REASON] != ''][COL_REASON].value_counts()
 
 with st.expander("📊 ดูกราฟสรุปจำนวนรายการแยกตาม 'กระทรวง'"):
-    chart = create_horizontal_bar(chart_ministry, '#60A5FA') # สีฟ้า
+    chart = create_horizontal_bar(chart_ministry, '#60A5FA') 
     if chart:
         st.altair_chart(chart, use_container_width=True)
     else:
         st.info("ไม่มีข้อมูลสำหรับแสดงกราฟ")
 
 with st.expander("📊 ดูกราฟสรุปจำนวนรายการแยกตาม 'หน่วยงาน'"):
-    chart = create_horizontal_bar(chart_agency, '#4ADE80') # สีเขียว
+    chart = create_horizontal_bar(chart_agency, '#4ADE80') 
     if chart:
         st.altair_chart(chart, use_container_width=True)
     else:
         st.info("ไม่มีข้อมูลสำหรับแสดงกราฟ")
 
 with st.expander("📊 ดูกราฟสรุปแยกตาม 'เหตุผลที่ไม่พัฒนา e-Service'"):
-    chart = create_horizontal_bar(chart_reason, '#F87171') # สีแดง
+    chart = create_horizontal_bar(chart_reason, '#F87171') 
     if chart:
         st.altair_chart(chart, use_container_width=True)
     else:
