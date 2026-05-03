@@ -13,15 +13,12 @@ st.set_page_config(
 # Custom CSS เพื่อตกแต่ง Card และตั้งค่าฟอนต์ Prompt (โดยไม่กระทบไอคอน)
 st.markdown("""
 <style>
-    /* นำเข้าฟอนต์ Prompt */
     @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
 
-    /* บังคับใช้ฟอนต์ Prompt กับทุกส่วน */
     * {
         font-family: 'Prompt', sans-serif;
     }
 
-    /* *สำคัญ*: คืนค่าฟอนต์พื้นฐานให้กลุ่มไอคอน (เพื่อแก้ปัญหาจุด 3 จุด และไอคอนระบบเพี้ยน) */
     .material-icons, 
     .material-symbols-rounded, 
     [class*="material"], 
@@ -31,7 +28,6 @@ st.markdown("""
         font-family: 'Material Symbols Rounded', 'Material Icons', sans-serif !important;
     }
 
-    /* ตกแต่ง Metric Card */
     .metric-card {
         background-color: #ffffff;
         border: 1px solid #e0e0e0;
@@ -71,7 +67,7 @@ def load_data():
     file_path = 'test_group4_cut.xlsx'
     try:
         df = pd.read_excel(file_path)
-        df = df.fillna('') # เติมค่าว่างด้วย string ว่างเพื่อป้องกัน Error ตอนค้นหา
+        df = df.fillna('') 
         return df
     except FileNotFoundError:
         st.error(f"❌ ไม่พบไฟล์ '{file_path}' กรุณาอัปโหลดไฟล์นี้ไว้ในโฟลเดอร์เดียวกับโค้ด")
@@ -80,9 +76,8 @@ def load_data():
 df = load_data()
 
 # ==========================================
-# 3. กำหนดคอลัมน์ (อิงตามลำดับ A, B, C... ของ Excel)
+# 3. กำหนดคอลัมน์ (A=0, B=1, C=2, D=3, E=4, F=5)
 # ==========================================
-# A=0, B=1, C=2, D=3, E=4, F=5, G=6
 try:
     COL_MINISTRY = df.columns[1]  # คอลัมน์ B: กระทรวง
     COL_AGENCY = df.columns[2]    # คอลัมน์ C: หน่วยงาน
@@ -93,30 +88,39 @@ except IndexError:
     st.stop()
 
 # ==========================================
-# 4. สร้าง Sidebar สำหรับตั้งค่าและกรองข้อมูล
+# 4. กำหนดชุดสี (Color Mapping) สำหรับเหตุผลฯ
+# ==========================================
+# ชุดสีพาสเทลแบบคลีนๆ สบายตา
+PASTEL_COLORS = [
+    '#dbeafe', '#d1fae5', '#fef3c7', '#fee2e2', 
+    '#f3e8ff', '#ffedd5', '#e0e7ff', '#fce7f3', '#f3f4f6'
+]
+
+# ดึงเหตุผลที่ไม่ซ้ำกันทั้งหมด (ไม่นับค่าว่าง) มาจับคู่กับสี
+unique_reasons_all = sorted([str(x) for x in df[COL_REASON].unique() if str(x).strip() != ''])
+color_map = {reason: PASTEL_COLORS[i % len(PASTEL_COLORS)] for i, reason in enumerate(unique_reasons_all)}
+
+# ==========================================
+# 5. สร้าง Sidebar สำหรับตั้งค่าและกรองข้อมูล
 # ==========================================
 st.sidebar.title("🔍 ตัวกรองข้อมูล")
 st.sidebar.markdown("---")
 
-# ช่องค้นหา (Search)
 search_text = st.sidebar.text_input("ค้นหาข้อความทั่วไป", placeholder="พิมพ์คำที่ต้องการค้นหา...")
 
 st.sidebar.markdown("**เลือกกรองตามหมวดหมู่:**")
 
-# ดึงข้อมูลมาทำเป็นตัวเลือก (โดยตัดค่าว่างออก)
 min_opts = sorted([str(x) for x in df[COL_MINISTRY].unique() if str(x).strip() != ''])
 agency_opts = sorted([str(x) for x in df[COL_AGENCY].unique() if str(x).strip() != ''])
 type_opts = sorted([str(x) for x in df[COL_TYPE].unique() if str(x).strip() != ''])
-reason_opts = sorted([str(x) for x in df[COL_REASON].unique() if str(x).strip() != ''])
 
-# ช่องตัวกรอง (Filters)
 ministries = st.sidebar.multiselect("กระทรวง", options=min_opts)
 agencies = st.sidebar.multiselect("หน่วยงาน", options=agency_opts)
 agency_types = st.sidebar.multiselect("ประเภทหน่วยงาน", options=type_opts)
-reasons = st.sidebar.multiselect("เหตุผลที่ไม่พัฒนา e-Service", options=reason_opts)
+reasons = st.sidebar.multiselect("เหตุผลที่ไม่พัฒนา e-Service", options=unique_reasons_all)
 
 # ==========================================
-# 5. ประมวลผลการกรองข้อมูล (Apply Filters)
+# 6. ประมวลผลการกรองข้อมูล
 # ==========================================
 filtered_df = df.copy()
 
@@ -134,52 +138,68 @@ if reasons:
     filtered_df = filtered_df[filtered_df[COL_REASON].isin(reasons)]
 
 # ==========================================
-# 6. แสดงผลหน้าหลัก (Main Content & Summary Cards)
+# 7. แสดงผลหน้าหลัก (Main Content & Summary Cards)
 # ==========================================
 st.title("📊 Dashboard สรุปข้อมูลงานบริการกลุ่ม 4 (ที่จะไม่พัฒนา e-Service)")
 st.markdown("---")
 
-# คำนวณจำนวนสำหรับ Card (นับแบบ Unique และไม่นับค่าว่าง)
 count_all = len(filtered_df)
 count_ministry = filtered_df[filtered_df[COL_MINISTRY] != ''][COL_MINISTRY].nunique()
 count_agency = filtered_df[filtered_df[COL_AGENCY] != ''][COL_AGENCY].nunique()
 count_reason = filtered_df[filtered_df[COL_REASON] != ''][COL_REASON].nunique()
 
-# วาด Summary Cards 4 ช่อง
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.markdown(f'''
-        <div class="metric-card">
-            <div class="metric-label">📝 จำนวนรายการทั้งหมด</div>
-            <div class="metric-value">{count_all:,}</div>
-        </div>
-    ''', unsafe_allow_html=True)
+    st.markdown(f'''<div class="metric-card"><div class="metric-label">📝 จำนวนรายการทั้งหมด</div><div class="metric-value">{count_all:,}</div></div>''', unsafe_allow_html=True)
 with col2:
-    st.markdown(f'''
-        <div class="metric-card">
-            <div class="metric-label">🏛️ จำนวนกระทรวง</div>
-            <div class="metric-value">{count_ministry:,}</div>
-        </div>
-    ''', unsafe_allow_html=True)
+    st.markdown(f'''<div class="metric-card"><div class="metric-label">🏛️ จำนวนกระทรวง</div><div class="metric-value">{count_ministry:,}</div></div>''', unsafe_allow_html=True)
 with col3:
-    st.markdown(f'''
-        <div class="metric-card">
-            <div class="metric-label">🏢 จำนวนหน่วยงาน</div>
-            <div class="metric-value">{count_agency:,}</div>
-        </div>
-    ''', unsafe_allow_html=True)
+    st.markdown(f'''<div class="metric-card"><div class="metric-label">🏢 จำนวนหน่วยงาน</div><div class="metric-value">{count_agency:,}</div></div>''', unsafe_allow_html=True)
 with col4:
-    st.markdown(f'''
-        <div class="metric-card">
-            <div class="metric-label">⚠️ เหตุผลที่ไม่พัฒนา e-Service</div>
-            <div class="metric-value">{count_reason:,}</div>
-        </div>
-    ''', unsafe_allow_html=True)
+    st.markdown(f'''<div class="metric-card"><div class="metric-label">⚠️ เหตุผลที่ไม่พัฒนา e-Service</div><div class="metric-value">{count_reason:,}</div></div>''', unsafe_allow_html=True)
 
-st.write("") # เว้นบรรทัด
+st.write("") 
 st.write("") 
 
-# แสดงตารางข้อมูล
+# ==========================================
+# 8. ส่วนแสดง Legend เม็ดสี และตาราง
+# ==========================================
 st.subheader(f"📄 รายละเอียดข้อมูล ({count_all} รายการ)")
-st.dataframe(filtered_df, use_container_width=True, hide_index=True)
+
+# สร้าง Legend อธิบายสี (แสดงเฉพาะสีที่มีในข้อมูลที่ถูก Filter แล้ว เพื่อความสะอาดตา)
+current_reasons = sorted([str(x) for x in filtered_df[COL_REASON].unique() if str(x).strip() != ''])
+
+if current_reasons:
+    legend_html = '<div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; padding: 10px; background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">'
+    legend_html += '<span style="font-weight: 500; color: #374151; margin-right: 5px;">📌 สัญลักษณ์สี:</span>'
+    for reason in current_reasons:
+        color = color_map.get(reason, '#ffffff')
+        legend_html += f'''
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="width: 14px; height: 14px; border-radius: 50%; background-color: {color}; border: 1px solid #d1d5db;"></div>
+                <span style="font-size: 0.95rem; color: #4b5563;">{reason}</span>
+            </div>
+        '''
+    legend_html += '</div>'
+    st.markdown(legend_html, unsafe_allow_html=True)
+
+# ฟังก์ชันสำหรับระบายสีใน DataFrame
+def apply_color(val):
+    color = color_map.get(str(val), '')
+    if color:
+        # ระบายสีพื้นหลังเซลล์ และให้ข้อความสีเข้มเพื่อให้อ่านง่าย
+        return f'background-color: {color}; color: #1f2937;'
+    return ''
+
+# แสดงผลตารางพร้อม Styler ไฮไลต์สีลงในคอลัมน์ F
+if not filtered_df.empty:
+    # ตรวจสอบเวอร์ชัน pandas (ใช้ map ถ้าเวอร์ชันใหม่, applymap ถ้าเวอร์ชันเก่า)
+    if hasattr(filtered_df.style, 'map'):
+        styled_df = filtered_df.style.map(apply_color, subset=[COL_REASON])
+    else:
+        styled_df = filtered_df.style.applymap(apply_color, subset=[COL_REASON])
+        
+    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+else:
+    st.info("ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา")
