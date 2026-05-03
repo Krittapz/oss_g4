@@ -5,7 +5,7 @@ import pandas as pd
 # 1. ตั้งค่าหน้าเพจ (Page Configuration)
 # ==========================================
 st.set_page_config(
-    page_title="Dashboard สรุปข้อมูลงานบริการกลุ่ม 4", 
+    page_title="Dashboard สรุปข้อมูลงานบริการกลุ่ม 4 (ไม่พัฒนาเป็น e-Service)", 
     layout="wide", 
     page_icon="📊"
 )
@@ -82,14 +82,14 @@ df = load_data()
 # ==========================================
 # 3. กำหนดคอลัมน์ (อิงตามลำดับ A, B, C... ของ Excel)
 # ==========================================
-# A = index 0, B = index 1, C = index 2, ..., G = index 6
+# A=0, B=1, C=2, D=3, E=4, F=5, G=6
 try:
     COL_MINISTRY = df.columns[1]  # คอลัมน์ B: กระทรวง
     COL_AGENCY = df.columns[2]    # คอลัมน์ C: หน่วยงาน
     COL_TYPE = df.columns[3]      # คอลัมน์ D: ประเภทหน่วยงาน
-    COL_REASON = df.columns[6]    # คอลัมน์ G: เหตุผลที่ไม่เชื่อมโยง
+    COL_REASON = df.columns[5]    # คอลัมน์ F: เหตุผลที่ไม่พัฒนา e-Service
 except IndexError:
-    st.error("❌ จำนวนคอลัมน์ในไฟล์ Excel ไม่ครบถ้วน (ต้องมีถึงคอลัมน์ G)")
+    st.error("❌ จำนวนคอลัมน์ในไฟล์ Excel ไม่ครบถ้วน (ต้องมีอย่างน้อยถึงคอลัมน์ F)")
     st.stop()
 
 # ==========================================
@@ -103,7 +103,7 @@ search_text = st.sidebar.text_input("ค้นหาข้อความทั�
 
 st.sidebar.markdown("**เลือกกรองตามหมวดหมู่:**")
 
-# ดึงข้อมูลมาทำเป็นตัวเลือก (โดยตัดค่าว่างออก เพื่อไม่ให้มีตัวเลือกว่างใน dropdown)
+# ดึงข้อมูลมาทำเป็นตัวเลือก (โดยตัดค่าว่างออก)
 min_opts = sorted([str(x) for x in df[COL_MINISTRY].unique() if str(x).strip() != ''])
 agency_opts = sorted([str(x) for x in df[COL_AGENCY].unique() if str(x).strip() != ''])
 type_opts = sorted([str(x) for x in df[COL_TYPE].unique() if str(x).strip() != ''])
@@ -113,7 +113,7 @@ reason_opts = sorted([str(x) for x in df[COL_REASON].unique() if str(x).strip() 
 ministries = st.sidebar.multiselect("กระทรวง", options=min_opts)
 agencies = st.sidebar.multiselect("หน่วยงาน", options=agency_opts)
 agency_types = st.sidebar.multiselect("ประเภทหน่วยงาน", options=type_opts)
-reasons = st.sidebar.multiselect("เหตุผลที่ไม่เชื่อมโยง", options=reason_opts)
+reasons = st.sidebar.multiselect("เหตุผลที่ไม่พัฒนา e-Service", options=reason_opts)
 
 # ==========================================
 # 5. ประมวลผลการกรองข้อมูล (Apply Filters)
@@ -172,7 +172,7 @@ with col3:
 with col4:
     st.markdown(f'''
         <div class="metric-card">
-            <div class="metric-label">⚠️ เหตุผลที่ไม่เชื่อมโยง</div>
+            <div class="metric-label">⚠️ เหตุผลที่ไม่พัฒนา e-Service</div>
             <div class="metric-value">{count_reason:,}</div>
         </div>
     ''', unsafe_allow_html=True)
