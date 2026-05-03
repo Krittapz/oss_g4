@@ -4,11 +4,19 @@ import pandas as pd
 # ==========================================
 # 1. ตั้งค่าหน้าเพจ (Page Configuration)
 # ==========================================
-st.set_page_config(page_title="Dashboard สรุปข้อมูล", layout="wide", page_icon="📊")
+st.set_page_config(page_title="Dashboard สรุปข้อมูลงานบริการกลุ่ม 4 (ที่จะไม่พัฒนา e-Service)", layout="wide", page_icon="📊")
 
-# Custom CSS เพื่อตกแต่ง Card ให้ดู Minimal และสะอาดตา
+# Custom CSS เพื่อตกแต่ง Card ให้ดู Minimal และนำเข้าฟอนต์ Prompt จาก Google Fonts
 st.markdown("""
 <style>
+    /* นำเข้าฟอนต์ Prompt จาก Google Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+
+    /* บังคับใช้ฟอนต์ Prompt กับทุกส่วนประกอบของ Streamlit */
+    html, body, [class*="css"], [class*="st-"], .stApp {
+        font-family: 'Prompt', sans-serif !important;
+    }
+
     .metric-card {
         background-color: #ffffff;
         border: 1px solid #e0e0e0;
@@ -33,7 +41,6 @@ st.markdown("""
         font-weight: 500;
         color: #6b7280;
     }
-    /* ปรับแต่งส่วน Header ของตาราง */
     .stDataFrame {
         border-radius: 8px;
         overflow: hidden;
@@ -46,7 +53,6 @@ st.markdown("""
 # ==========================================
 @st.cache_data
 def load_data():
-    # อ้างอิงไฟล์ตามที่ระบุ
     file_path = 'test_group4_cut.xlsx'
     try:
         df = pd.read_excel(file_path)
@@ -58,9 +64,11 @@ def load_data():
 
 df = load_data()
 
-# ตรวจสอบชื่อคอลัมน์ (หากในไฟล์ Excel ชื่อคอลัมน์ต่างจากนี้ สามารถแก้ไขค่าใน String ด้านล่างได้เลย)
-COL_MINISTRY = 'กระทรวง' if 'กระทรวง' in df.columns else df.columns[0]
-COL_AGENCY = 'หน่วยงาน' if 'หน่วยงาน' in df.columns else df.columns[1]
+# กำหนดชื่อคอลัมน์แบบระบุเจาะจงตามที่แจ้ง
+COL_MINISTRY = 'รายชื่อกระทรวง'
+COL_AGENCY = 'รายชื่อหน่วยงาน'
+
+# ตรวจสอบชื่อคอลัมน์อื่น ๆ เผื่อไว้
 COL_TYPE = 'ประเภทหน่วยงาน' if 'ประเภทหน่วยงาน' in df.columns else df.columns[2]
 COL_REASON = 'เหตุผลที่ไม่เชื่อมโยง' if 'เหตุผลที่ไม่เชื่อมโยง' in df.columns else df.columns[3]
 
@@ -74,23 +82,28 @@ st.sidebar.markdown("---")
 search_text = st.sidebar.text_input("ค้นหาข้อความทั่วไป", placeholder="พิมพ์คำที่ต้องการค้นหา...")
 
 st.sidebar.markdown("**เลือกกรองตามหมวดหมู่:**")
+
+# ดึงข้อมูลมาทำเป็นตัวเลือก (โดยตัดค่าว่างออก เพื่อไม่ให้มีตัวเลือกว่างใน dropdown)
+min_opts = sorted([str(x) for x in df[COL_MINISTRY].unique() if str(x).strip() != ''])
+agency_opts = sorted([str(x) for x in df[COL_AGENCY].unique() if str(x).strip() != ''])
+type_opts = sorted([str(x) for x in df[COL_TYPE].unique() if str(x).strip() != ''])
+reason_opts = sorted([str(x) for x in df[COL_REASON].unique() if str(x).strip() != ''])
+
 # ช่องตัวกรอง (Filters)
-ministries = st.sidebar.multiselect("กระทรวง", options=sorted(df[COL_MINISTRY].astype(str).unique()))
-agencies = st.sidebar.multiselect("หน่วยงาน", options=sorted(df[COL_AGENCY].astype(str).unique()))
-agency_types = st.sidebar.multiselect("ประเภทหน่วยงาน", options=sorted(df[COL_TYPE].astype(str).unique()))
-reasons = st.sidebar.multiselect("เหตุผลที่ไม่เชื่อมโยง", options=sorted(df[COL_REASON].astype(str).unique()))
+ministries = st.sidebar.multiselect("กระทรวง", options=min_opts)
+agencies = st.sidebar.multiselect("หน่วยงาน", options=agency_opts)
+agency_types = st.sidebar.multiselect("ประเภทหน่วยงาน", options=type_opts)
+reasons = st.sidebar.multiselect("เหตุผลที่ไม่เชื่อมโยง", options=reason_opts)
 
 # ==========================================
 # 4. ประมวลผลการกรองข้อมูล (Apply Filters)
 # ==========================================
 filtered_df = df.copy()
 
-# กรองด้วยช่องค้นหา (ค้นหาจากทุกคอลัมน์ที่เป็นข้อความ)
 if search_text:
     mask = filtered_df.astype(str).apply(lambda x: x.str.contains(search_text, case=False)).any(axis=1)
     filtered_df = filtered_df[mask]
 
-# กรองด้วย Dropdown
 if ministries:
     filtered_df = filtered_df[filtered_df[COL_MINISTRY].isin(ministries)]
 if agencies:
@@ -107,6 +120,12 @@ st.title("📊 แดชบอร์ดสรุปข้อมูล")
 st.markdown("ระบบติดตามและตรวจสอบการเชื่อมโยงข้อมูล")
 st.markdown("---")
 
+# คำนวณจำนวนสำหรับ Card (นับแบบ Unique และไม่นับค่าว่าง)
+count_all = len(filtered_df)
+count_ministry = filtered_df[filtered_df[COL_MINISTRY] != ''][COL_MINISTRY].nunique()
+count_agency = filtered_df[filtered_df[COL_AGENCY] != ''][COL_AGENCY].nunique()
+count_reason = filtered_df[filtered_df[COL_REASON] != ''][COL_REASON].nunique()
+
 # วาด Summary Cards 4 ช่อง
 col1, col2, col3, col4 = st.columns(4)
 
@@ -114,28 +133,28 @@ with col1:
     st.markdown(f'''
         <div class="metric-card">
             <div class="metric-label">📝 จำนวนรายการทั้งหมด</div>
-            <div class="metric-value">{len(filtered_df):,}</div>
+            <div class="metric-value">{count_all:,}</div>
         </div>
     ''', unsafe_allow_html=True)
 with col2:
     st.markdown(f'''
         <div class="metric-card">
-            <div class="metric-label">🏛️ กระทรวงที่เกี่ยวข้อง</div>
-            <div class="metric-value">{filtered_df[COL_MINISTRY].nunique():,}</div>
+            <div class="metric-label">🏛️ จำนวนกระทรวง</div>
+            <div class="metric-value">{count_ministry:,}</div>
         </div>
     ''', unsafe_allow_html=True)
 with col3:
     st.markdown(f'''
         <div class="metric-card">
-            <div class="metric-label">🏢 หน่วยงานทั้งหมด</div>
-            <div class="metric-value">{filtered_df[COL_AGENCY].nunique():,}</div>
+            <div class="metric-label">🏢 จำนวนหน่วยงาน</div>
+            <div class="metric-value">{count_agency:,}</div>
         </div>
     ''', unsafe_allow_html=True)
 with col4:
     st.markdown(f'''
         <div class="metric-card">
             <div class="metric-label">⚠️ เหตุผลที่ไม่เชื่อมโยง</div>
-            <div class="metric-value">{filtered_df[COL_REASON].nunique():,}</div>
+            <div class="metric-value">{count_reason:,}</div>
         </div>
     ''', unsafe_allow_html=True)
 
@@ -143,5 +162,5 @@ st.write("") # เว้นบรรทัด
 st.write("") 
 
 # แสดงตารางข้อมูล
-st.subheader(f"📄 รายละเอียดข้อมูล ({len(filtered_df)} รายการ)")
+st.subheader(f"📄 รายละเอียดข้อมูล ({count_all} รายการ)")
 st.dataframe(filtered_df, use_container_width=True, hide_index=True)
