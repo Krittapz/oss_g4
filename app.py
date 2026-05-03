@@ -4,19 +4,34 @@ import pandas as pd
 # ==========================================
 # 1. ตั้งค่าหน้าเพจ (Page Configuration)
 # ==========================================
-st.set_page_config(page_title="Dashboard สรุปข้อมูลงานบริการกลุ่ม 4 (ที่จะไม่พัฒนา e-Service)", layout="wide", page_icon="📊")
+st.set_page_config(
+    page_title="Dashboard สรุปข้อมูลงานบริการกลุ่ม 4", 
+    layout="wide", 
+    page_icon="📊"
+)
 
-# Custom CSS เพื่อตกแต่ง Card ให้ดู Minimal และนำเข้าฟอนต์ Prompt จาก Google Fonts
+# Custom CSS เพื่อตกแต่ง Card และตั้งค่าฟอนต์ Prompt (โดยไม่กระทบไอคอน)
 st.markdown("""
 <style>
-    /* นำเข้าฟอนต์ Prompt จาก Google Fonts */
+    /* นำเข้าฟอนต์ Prompt */
     @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
 
-    /* บังคับใช้ฟอนต์ Prompt กับทุกส่วนประกอบของ Streamlit */
-    html, body, [class*="css"], [class*="st-"], .stApp {
-        font-family: 'Prompt', sans-serif !important;
+    /* บังคับใช้ฟอนต์ Prompt กับทุกส่วน */
+    * {
+        font-family: 'Prompt', sans-serif;
     }
 
+    /* *สำคัญ*: คืนค่าฟอนต์พื้นฐานให้กลุ่มไอคอน (เพื่อแก้ปัญหาจุด 3 จุด และไอคอนระบบเพี้ยน) */
+    .material-icons, 
+    .material-symbols-rounded, 
+    [class*="material"], 
+    [data-testid*="stIcon"], 
+    svg, 
+    svg * {
+        font-family: 'Material Symbols Rounded', 'Material Icons', sans-serif !important;
+    }
+
+    /* ตกแต่ง Metric Card */
     .metric-card {
         background-color: #ffffff;
         border: 1px solid #e0e0e0;
@@ -64,16 +79,21 @@ def load_data():
 
 df = load_data()
 
-# กำหนดชื่อคอลัมน์แบบระบุเจาะจงตามที่แจ้ง
-COL_MINISTRY = 'รายชื่อกระทรวง'
-COL_AGENCY = 'รายชื่อหน่วยงาน'
-
-# ตรวจสอบชื่อคอลัมน์อื่น ๆ เผื่อไว้
-COL_TYPE = 'ประเภทหน่วยงาน' if 'ประเภทหน่วยงาน' in df.columns else df.columns[2]
-COL_REASON = 'เหตุผลที่ไม่เชื่อมโยง' if 'เหตุผลที่ไม่เชื่อมโยง' in df.columns else df.columns[3]
+# ==========================================
+# 3. กำหนดคอลัมน์ (อิงตามลำดับ A, B, C... ของ Excel)
+# ==========================================
+# A = index 0, B = index 1, C = index 2, ..., G = index 6
+try:
+    COL_MINISTRY = df.columns[1]  # คอลัมน์ B: กระทรวง
+    COL_AGENCY = df.columns[2]    # คอลัมน์ C: หน่วยงาน
+    COL_TYPE = df.columns[3]      # คอลัมน์ D: ประเภทหน่วยงาน
+    COL_REASON = df.columns[6]    # คอลัมน์ G: เหตุผลที่ไม่เชื่อมโยง
+except IndexError:
+    st.error("❌ จำนวนคอลัมน์ในไฟล์ Excel ไม่ครบถ้วน (ต้องมีถึงคอลัมน์ G)")
+    st.stop()
 
 # ==========================================
-# 3. สร้าง Sidebar สำหรับตั้งค่าและกรองข้อมูล
+# 4. สร้าง Sidebar สำหรับตั้งค่าและกรองข้อมูล
 # ==========================================
 st.sidebar.title("🔍 ตัวกรองข้อมูล")
 st.sidebar.markdown("---")
@@ -96,7 +116,7 @@ agency_types = st.sidebar.multiselect("ประเภทหน่วยงา�
 reasons = st.sidebar.multiselect("เหตุผลที่ไม่เชื่อมโยง", options=reason_opts)
 
 # ==========================================
-# 4. ประมวลผลการกรองข้อมูล (Apply Filters)
+# 5. ประมวลผลการกรองข้อมูล (Apply Filters)
 # ==========================================
 filtered_df = df.copy()
 
@@ -114,10 +134,9 @@ if reasons:
     filtered_df = filtered_df[filtered_df[COL_REASON].isin(reasons)]
 
 # ==========================================
-# 5. แสดงผลหน้าหลัก (Main Content & Summary Cards)
+# 6. แสดงผลหน้าหลัก (Main Content & Summary Cards)
 # ==========================================
-st.title("📊 แดชบอร์ดสรุปข้อมูล")
-st.markdown("ระบบติดตามและตรวจสอบการเชื่อมโยงข้อมูล")
+st.title("📊 Dashboard สรุปข้อมูลงานบริการกลุ่ม 4 (ที่จะไม่พัฒนา e-Service)")
 st.markdown("---")
 
 # คำนวณจำนวนสำหรับ Card (นับแบบ Unique และไม่นับค่าว่าง)
