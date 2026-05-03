@@ -10,7 +10,7 @@ st.set_page_config(
     page_icon="📊"
 )
 
-# Custom CSS เพื่อตกแต่ง Card และตั้งค่าฟอนต์ Prompt (โดยไม่กระทบไอคอน)
+# Custom CSS เพื่อตกแต่ง Card และตั้งค่าฟอนต์ Prompt
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
@@ -90,15 +90,22 @@ except IndexError:
 # ==========================================
 # 4. กำหนดชุดสี (Color Mapping) สำหรับเหตุผลฯ
 # ==========================================
-# ชุดสีพาสเทลแบบคลีนๆ สบายตา
-PASTEL_COLORS = [
-    '#dbeafe', '#d1fae5', '#fef3c7', '#fee2e2', 
-    '#f3e8ff', '#ffedd5', '#e0e7ff', '#fce7f3', '#f3f4f6'
+# ปรับชุดสีใหม่ให้มีความอิ่มสีชัดเจนขึ้น 
+VIBRANT_COLORS = [
+    '#60A5FA', # Blue
+    '#4ADE80', # Green
+    '#FACC15', # Yellow
+    '#F87171', # Red
+    '#C084FC', # Purple
+    '#FB923C', # Orange
+    '#2DD4BF', # Teal
+    '#F472B6', # Pink
+    '#9CA3AF'  # Gray
 ]
 
 # ดึงเหตุผลที่ไม่ซ้ำกันทั้งหมด (ไม่นับค่าว่าง) มาจับคู่กับสี
 unique_reasons_all = sorted([str(x) for x in df[COL_REASON].unique() if str(x).strip() != ''])
-color_map = {reason: PASTEL_COLORS[i % len(PASTEL_COLORS)] for i, reason in enumerate(unique_reasons_all)}
+color_map = {reason: VIBRANT_COLORS[i % len(VIBRANT_COLORS)] for i, reason in enumerate(unique_reasons_all)}
 
 # ==========================================
 # 5. สร้าง Sidebar สำหรับตั้งค่าและกรองข้อมูล
@@ -163,22 +170,9 @@ st.write("")
 st.write("") 
 
 # ==========================================
-# 8. ส่วนแสดง Legend เม็ดสี และตาราง
+# 8. ส่วนแสดงตาราง
 # ==========================================
 st.subheader(f"📄 รายละเอียดข้อมูล ({count_all} รายการ)")
-
-# สร้าง Legend อธิบายสี (แก้ปัญหาการแสดงเป็น code โดยเอาการขึ้นบรรทัดใหม่และการย่อหน้าออก)
-current_reasons = sorted([str(x) for x in filtered_df[COL_REASON].unique() if str(x).strip() != ''])
-
-if current_reasons:
-    legend_html = '<div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; padding: 10px; background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">'
-    legend_html += '<span style="font-weight: 500; color: #374151; margin-right: 5px;">📌 สัญลักษณ์สี:</span>'
-    for reason in current_reasons:
-        color = color_map.get(reason, '#ffffff')
-        # วางเป็นบรรทัดเดียวเพื่อป้องกัน Markdown ตีความเป็น Code block
-        legend_html += f'<div style="display: flex; align-items: center; gap: 6px;"><div style="width: 14px; height: 14px; border-radius: 50%; background-color: {color}; border: 1px solid #d1d5db;"></div><span style="font-size: 0.95rem; color: #4b5563;">{reason}</span></div>'
-    legend_html += '</div>'
-    st.markdown(legend_html, unsafe_allow_html=True)
 
 # ฟังก์ชันสำหรับระบายสีใน DataFrame
 def apply_color(val):
@@ -197,3 +191,18 @@ if not filtered_df.empty:
     st.dataframe(styled_df, use_container_width=True, hide_index=True)
 else:
     st.info("ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา")
+
+# ==========================================
+# 9. ส่วนแสดง Legend เม็ดสี (ย้ายมาไว้ด้านล่างตาราง)
+# ==========================================
+current_reasons = sorted([str(x) for x in filtered_df[COL_REASON].unique() if str(x).strip() != ''])
+
+if current_reasons:
+    # เพิ่ม margin-top เพื่อเว้นระยะจากตารางด้านบน
+    legend_html = '<div style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 15px; padding: 10px; background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">'
+    legend_html += '<span style="font-weight: 500; color: #374151; margin-right: 5px;">📌 สัญลักษณ์สี:</span>'
+    for reason in current_reasons:
+        color = color_map.get(reason, '#ffffff')
+        legend_html += f'<div style="display: flex; align-items: center; gap: 6px;"><div style="width: 14px; height: 14px; border-radius: 50%; background-color: {color}; border: 1px solid #d1d5db;"></div><span style="font-size: 0.95rem; color: #4b5563;">{reason}</span></div>'
+    legend_html += '</div>'
+    st.markdown(legend_html, unsafe_allow_html=True)
