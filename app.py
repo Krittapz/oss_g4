@@ -276,7 +276,7 @@ st.markdown("---")
 st.markdown("### 📊 แดชบอร์ดวิเคราะห์ข้อมูลเชิงลึก (Tableau)")
 
 # คำแนะนำ: ให้นำโค้ด Embed จาก Tableau Public มาวางแทนที่ในตัวแปร tableau_embed_code ด้านล่างนี้
-tableau_embed_code = tableau_embed_code = """
+tableau_embed_code = """
 <div class='tableauPlaceholder' id='viz1777794725088' style='position: relative'><noscript><a href='#'><img alt=' Dashboard รายละเอียดงานบริการของหน่วยงานภาครัฐที่ขับเคลื่อนในปีงบฯ 2569 ' src='https://public.tableau.com/static/images/Da/Dashboarde-Service69_17658966855680/DashboardDetaile-Service69/1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='' /><param name='name' value='Dashboarde-Service69_17658966855680/DashboardDetaile-Service69' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https://public.tableau.com/static/images/...' /></object></div>
 <script type='text/javascript'>
     var divElement = document.getElementById('viz1777794725088');
